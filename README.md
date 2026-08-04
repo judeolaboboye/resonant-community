@@ -4,6 +4,9 @@ Resonant is a local-first macOS dictation and meeting-transcription app. Hold a
 hotkey, speak, and release to paste text into the app you are using. Speech
 recognition and the deterministic cleanup pipeline run on your Mac.
 
+Created by [sourcetms.com](https://sourcetms.com) ·
+[@sourcetms on X](https://x.com/sourcetms)
+
 This repository is the Community Edition. It is intended to build and remain
 useful without a Resonant account or Resonant-operated infrastructure.
 
