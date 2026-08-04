@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleExecutable</key>
+	<string>Resonant</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>org.resonant.community</string>
+	<key>CFBundleName</key>
+	<string>Resonant Community</string>
+	<key>CFBundleDisplayName</key>
+	<string>Resonant Community</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.91</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>org.resonant.community</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>resonant-community</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Resonant uses AppleScript to paste transcribed text into apps.</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>Resonant captures system audio to transcribe the other side of meetings.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Resonant reads your calendar to surface upcoming meetings, auto-detect calls, and prefill meeting titles.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Resonant optionally reads your calendar to improve meeting detection and prefill meeting titles.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Resonant reads names from your contacts (on this Mac only) so dictation recognizes the people you talk about.</string>
+	<key>NSInputMonitoringUsageDescription</key>
+	<string>Resonant monitors your trigger key so you can start and stop dictation from anywhere.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Resonant needs microphone access to transcribe your voice.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>ResonantAppEnvironment</key>
+	<string>production</string>
+	<key>ResonantDistribution</key>
+	<string>community</string>
+	<key>ResonantAuthBaseURL</key>
+	<string></string>
+	<key>ResonantConvexCloudURL</key>
+	<string></string>
+	<key>ResonantPostHogAPIKey</key>
+	<string></string>
+	<key>ResonantSentryDSN</key>
+	<string></string>
+	<key>ResonantSentryProject</key>
+	<string></string>
+	<key>SUAutomaticallyUpdate</key>
+	<false/>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
+	<key>SUFeedURL</key>
+	<string></string>
+	<key>SUPublicEDKey</key>
+	<string></string>
+	<key>SUScheduledCheckInterval</key>
+	<integer>14400</integer>
+</dict>
+</plist>

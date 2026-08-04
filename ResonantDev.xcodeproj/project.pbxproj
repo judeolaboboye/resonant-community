@@ -1,0 +1,142 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		8D30D63D2E4B100000000001 /* Resonant Packaged */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 8D30D63D2E4B100000000005 /* Build configuration list for PBXAggregateTarget "Resonant Packaged" */;
+			buildPhases = (
+				8D30D63D2E4B100000000002 /* Package And Launch Resonant */,
+			);
+			dependencies = (
+			);
+			name = "Resonant Packaged";
+			productName = "Resonant Packaged";
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXGroup section */
+		8D30D63D2E4B100000000003 = {
+			isa = PBXGroup;
+			children = (
+				8D30D63D2E4B100000000004 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		8D30D63D2E4B100000000004 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXProject section */
+		8D30D63D2E4B100000000006 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1630;
+				TargetAttributes = {
+					8D30D63D2E4B100000000001 = {
+						CreatedOnToolsVersion = 16.3;
+					};
+				};
+			};
+			buildConfigurationList = 8D30D63D2E4B100000000007 /* Build configuration list for PBXProject "ResonantDev" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 8D30D63D2E4B100000000003;
+			productRefGroup = 8D30D63D2E4B100000000004 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8D30D63D2E4B100000000001 /* Resonant Packaged */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		8D30D63D2E4B100000000002 /* Package And Launch Resonant */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Package And Launch Resonant";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/zsh;
+				shellScript = "set -euo pipefail\nexport RESONANT_APP_OUTPUT_DIR=\"$SRCROOT/.build/xcode/$CONFIGURATION\"\n\"$SRCROOT/scripts/package_app.sh\" \"$CONFIGURATION\"\nif [[ \"${RESONANT_SKIP_OPEN:-0}\" != \"1\" ]]; then\n  \"$SRCROOT/scripts/run_packaged_app.sh\" \"$CONFIGURATION\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		8D30D63D2E4B100000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		8D30D63D2E4B100000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		8D30D63D2E4B10000000000A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		8D30D63D2E4B10000000000B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		8D30D63D2E4B100000000005 /* Build configuration list for PBXAggregateTarget "Resonant Packaged" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8D30D63D2E4B100000000008 /* Debug */,
+				8D30D63D2E4B100000000009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8D30D63D2E4B100000000007 /* Build configuration list for PBXProject "ResonantDev" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8D30D63D2E4B10000000000A /* Debug */,
+				8D30D63D2E4B10000000000B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 8D30D63D2E4B100000000006 /* Project object */;
+}

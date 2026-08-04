@@ -1,0 +1,11 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Build output and one exact known-fake key"
+paths = [
+    '''\.build/.*''',
+]
+regexes = [
+    '''^phc_exampleProjectKey$''',
+]

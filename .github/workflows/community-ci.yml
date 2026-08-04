@@ -1,0 +1,111 @@
+name: Community build
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-package:
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Assert tracked Community configuration
+        shell: zsh {0}
+        run: |
+          set -euo pipefail
+          plist="Sources/Resonant/Info.plist"
+
+          read_plist() {
+            /usr/libexec/PlistBuddy -c "Print :$1" "$plist" 2>/dev/null || true
+          }
+
+          for key in ResonantAuthBaseURL ResonantConvexCloudURL ResonantPostHogAPIKey ResonantSentryDSN ResonantSentryProject SUFeedURL SUPublicEDKey; do
+            [[ -z "$(read_plist "$key")" ]] || {
+              echo "Expected $key to be empty in the tracked Community plist" >&2
+              exit 1
+            }
+          done
+
+          [[ "$(read_plist SUEnableAutomaticChecks)" == "false" ]]
+          [[ "$(read_plist SUAutomaticallyUpdate)" == "false" ]]
+          [[ "$(read_plist CFBundleIdentifier)" != "com.resonance.resonant" ]]
+
+      - name: Export reviewed public snapshot
+        shell: zsh {0}
+        run: |
+          set -euo pipefail
+          snapshot="$RUNNER_TEMP/resonant-public"
+          scripts/export_public_snapshot.sh --ref HEAD "$snapshot"
+          echo "PUBLIC_SNAPSHOT=$snapshot" >> "$GITHUB_ENV"
+
+          test -f "$snapshot/README.md"
+          test -f "$snapshot/SECURITY.md"
+          test -f "$snapshot/docs/privacy-and-data.md"
+          test ! -e "$snapshot/.mcp.json"
+          test ! -e "$snapshot/CLAUDE.md"
+          test ! -e "$snapshot/scripts/release.sh"
+          test ! -e "$snapshot/scripts/update_homebrew.sh"
+
+      - name: Build exported snapshot
+        run: swift build --package-path "$PUBLIC_SNAPSHOT"
+
+      - name: Test exported snapshot
+        run: swift test --package-path "$PUBLIC_SNAPSHOT"
+
+      - name: Secret scan exported snapshot
+        run: |
+          brew install gitleaks
+          gitleaks detect --source "$PUBLIC_SNAPSHOT" --no-git --redact --config "$PUBLIC_SNAPSHOT/.gitleaks.toml"
+
+      - name: Package an unconfigured exported app
+        shell: zsh {0}
+        env:
+          RESONANT_DISTRIBUTION: "community"
+          RESONANT_RELEASE_BUILD: "1"
+          RESONANT_CODESIGN_IDENTITY: "-"
+          RESONANT_REQUIRE_POSTHOG_API_KEY: "false"
+          RESONANT_REQUIRE_SENTRY_DSN: "false"
+          RESONANT_SKIP_SENTRY_UPLOAD: "1"
+        run: |
+          set -euo pipefail
+          cd "$PUBLIC_SNAPSHOT"
+          export RESONANT_APP_OUTPUT_DIR="$RUNNER_TEMP/resonant-app"
+          # Poison the shell to prove Community packaging clears operator data.
+          export RESONANT_CONVEX_CLOUD_URL="https://private.example.invalid"
+          export RESONANT_AUTH_BASE_URL="https://auth.private.example.invalid"
+          export RESONANT_POSTHOG_API_KEY="not-a-real-posthog-key"
+          export RESONANT_SENTRY_DSN="https://public@errors.example.invalid/1"
+          export RESONANT_SPARKLE_FEED_URL="https://updates.example.invalid/appcast.xml"
+          export RESONANT_SPARKLE_PUBLIC_ED_KEY="fixture-public-key"
+          scripts/package_app.sh release
+
+          plist="$RESONANT_APP_OUTPUT_DIR/Resonant Community.app/Contents/Info.plist"
+          read_plist() {
+            /usr/libexec/PlistBuddy -c "Print :$1" "$plist" 2>/dev/null || true
+          }
+
+          for key in ResonantAuthBaseURL ResonantConvexCloudURL ResonantPostHogAPIKey ResonantSentryDSN ResonantSentryProject SUFeedURL SUPublicEDKey; do
+            [[ -z "$(read_plist "$key")" ]] || {
+              echo "Unconfigured package unexpectedly contains $key" >&2
+              exit 1
+            }
+          done
+
+          [[ "$(read_plist SUEnableAutomaticChecks)" == "false" ]]
+          [[ "$(read_plist SUAutomaticallyUpdate)" == "false" ]]
+          [[ "$(read_plist CFBundleIdentifier)" != "com.resonance.resonant" ]]
+          test -f "$RESONANT_APP_OUTPUT_DIR/Resonant Community.app/Contents/Resources/LICENSE"
+          test -f "$RESONANT_APP_OUTPUT_DIR/Resonant Community.app/Contents/Resources/NOTICE"
+          test -f "$RESONANT_APP_OUTPUT_DIR/Resonant Community.app/Contents/Resources/MODEL-LICENSES.md"
+          test "$(find "$RESONANT_APP_OUTPUT_DIR/Resonant Community.app/Contents/Resources/ThirdPartyLicenses" -type f | wc -l | tr -d ' ')" -eq 10

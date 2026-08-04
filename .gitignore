@@ -1,0 +1,79 @@
+# Build
+.build/
+.build-codex/
+.swiftpm/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Claude/agent skills
+.adal/
+.agent/
+.agents/
+.augment/
+.claude/
+.devin/
+
+# Xcode
+xcuserdata/
+*.xcscmblueprint
+
+# Agent skill symlinks (installed by various AI editors)
+.codebuddy/
+.commandcode/
+.continue/
+.crush/
+.factory/
+.goose/
+.iflow/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.roo/
+.sourcesage/
+.trae/
+.void/
+.windsurf/
+.zed/
+.**/skills/
+
+# Secrets
+*private_key*
+*.pem
+*.p12
+
+# Env
+.env*
+!.env.example
+
+# VSCode
+.vscode/
+
+# Release artifacts
+release/
+release*.log
+
+# Plans
+MULTI_MODEL_PLAN.md
+
+# Tooling
+.wrangler/
+skills-lock.json
+
+# Local MCP config (contains machine-specific paths and admin-secret retrieval)
+.mcp.json
+# Agent working notes
+.context/

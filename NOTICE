@@ -1,0 +1,51 @@
+Resonant Community Edition
+Copyright (c) 2026 Resonance Technologies
+
+This distribution includes or depends on third-party software. The authoritative
+license texts and copyright notices remain those distributed by each upstream
+project and dependency artifact.
+
+Direct Swift package dependencies include:
+
+- FluidAudio 0.14.8: Apache License 2.0
+  https://github.com/FluidInference/FluidAudio
+- Defaults 7.3.1: MIT License
+  https://github.com/sindresorhus/Defaults
+- KeyboardShortcuts 2.4.0: MIT License
+  https://github.com/sindresorhus/KeyboardShortcuts
+- LaunchAtLogin 5.0.2: MIT License
+  https://github.com/sindresorhus/LaunchAtLogin
+- PostHog iOS SDK 3.47.0: MIT License
+  https://github.com/PostHog/posthog-ios
+- Sentry Cocoa 8.58.0: MIT License
+  https://github.com/getsentry/sentry-cocoa
+- Sparkle 2.9.0: MIT-style License
+  https://github.com/sparkle-project/Sparkle
+- PLCrashReporter 1.12.2 (transitive through Sentry): MIT-style license with
+  bundled component notices
+  https://github.com/microsoft/plcrashreporter
+
+The repository also contains a compiled NemoTextProcessing.xcframework derived
+from FluidInference/text-processing-rs and NVIDIA NeMo text-processing grammars.
+The compiled normal-dependency graph at the pinned revision is
+`text-processing-rs 0.1.0 -> lazy_static 1.5.0`; development-only Cargo
+dependencies are not linked. See Vendor/NemoTextProcessing.md,
+Vendor/LICENSE-text-processing-rs, and Vendor/LICENSE-lazy_static-MIT.
+
+Current vendored artifact provenance:
+
+- Upstream commit: 1b90efaef7585d9f07d0074eb4dd7b5232eb3c3d
+- macos-arm64_x86_64/libtext_processing_rs.a SHA-256:
+  a0f51199640e27584c882dc53099956ebc85de4e9b162460bf86cf0f1cf8f23b
+- Rebuild command: scripts/build_nemo_text_processing.sh
+
+The checked-in archive has had the original maintainer home prefix replaced with
+a same-length neutral build prefix. The rebuild script pins Rust 1.92.0, uses
+Cargo.lock with `--locked`, remaps build/cache paths, and rejects personal macOS
+home paths before replacing the artifact. Re-run license and checksum review when
+the Rust graph changes.
+
+Speech and helper models are not covered by the Resonant source-code license.
+They are downloaded at runtime from their respective publishers. Their metadata,
+licenses, and terms may change independently. See docs/models.md and verify the
+exact revision before commercial use or redistribution.
