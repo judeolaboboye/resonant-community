@@ -33,6 +33,29 @@ struct ActiveCaptureRecovery: Codable, Equatable, Sendable {
     }
 }
 
+/// Decides when an interrupted capture that keeps failing recovery should
+/// stop blocking new dictations. Without this, one capture that can never be
+/// transcribed (for example a fraction of a second cut off by a crash) is
+/// retried on every launch and every new recording is refused.
+enum InterruptedCaptureRecoveryPolicy {
+    /// Captures shorter than this cannot hold a usable utterance.
+    static let minimumRecoverableDuration: TimeInterval = 1.0
+    /// Failed recovery attempts (one per launch) before the capture is set aside.
+    static let maximumFailedAttempts = 2
+
+    static func shouldSetAside(
+        failedAttempts: Int,
+        audioDuration: TimeInterval?,
+        hasPendingEntry: Bool
+    ) -> Bool {
+        if failedAttempts >= maximumFailedAttempts { return true }
+        // A pending entry proves the first pass produced text, so give the
+        // retry budget a chance before giving up on it.
+        guard !hasPendingEntry, let audioDuration else { return false }
+        return audioDuration < minimumRecoverableDuration
+    }
+}
+
 actor RecoveryStore {
     struct ActiveCaptureMarkerSnapshot: Sendable, Equatable {
         fileprivate let contents: Data?
@@ -182,6 +205,32 @@ actor RecoveryStore {
         }
     }
 
+    /// Moves a capture that recovery could not finish out of the active slot.
+    /// The audio and its marker are kept under `recovery/unrecovered/` so
+    /// nothing is lost, but the marker no longer blocks new captures.
+    @discardableResult
+    func setAsideActiveCapture(id: UUID) -> Bool {
+        guard case .loaded(let recovery) = loadActiveCaptureResult(),
+              recovery.id == id else { return false }
+        do {
+            try fileManager.createDirectory(at: unrecoveredDirectoryURL, withIntermediateDirectories: true)
+            let audioURL = recovery.audioURL
+            if fileManager.fileExists(atPath: audioURL.path) {
+                let audioDestination = unrecoveredDirectoryURL
+                    .appendingPathComponent("\(id.uuidString)-\(audioURL.lastPathComponent)")
+                try fileManager.moveItem(at: audioURL, to: audioDestination)
+            }
+            let markerDestination = unrecoveredDirectoryURL
+                .appendingPathComponent("\(id.uuidString).json")
+            try? fileManager.removeItem(at: markerDestination)
+            try fileManager.moveItem(at: activeCaptureURL, to: markerDestination)
+            return !fileManager.fileExists(atPath: activeCaptureURL.path)
+        } catch {
+            Self.report(error, source: "RecoveryStore.setAsideActiveCapture")
+            return false
+        }
+    }
+
     /// A fresh process has no live recorder other than the one named by the
     /// marker. Remove command-mode/crash leftovers from app-owned capture
     /// storage so switching away from purgeable `/tmp` does not create a
@@ -221,6 +270,10 @@ actor RecoveryStore {
 
     private var recoveryDirectoryURL: URL {
         rootURL.appendingPathComponent("recovery", isDirectory: true)
+    }
+
+    private var unrecoveredDirectoryURL: URL {
+        recoveryDirectoryURL.appendingPathComponent("unrecovered", isDirectory: true)
     }
 
     private var activeCaptureURL: URL {

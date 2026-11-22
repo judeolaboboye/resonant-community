@@ -253,4 +253,66 @@ final class RecoveryStoreTests: XCTestCase {
         XCTAssertTrue(restored)
         XCTAssertEqual(loadResult, .missing)
     }
+
+    func testSetAsideActiveCaptureKeepsAudioAndReleasesMarker() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let captures = root.appendingPathComponent("recovery/captures", isDirectory: true)
+        try FileManager.default.createDirectory(at: captures, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let audioURL = captures.appendingPathComponent("capture.caf")
+        try Data([1, 2, 3]).write(to: audioURL)
+        let store = RecoveryStore(rootURL: root)
+        let recovery = ActiveCaptureRecovery(
+            id: UUID(),
+            kind: .dictation,
+            startedAt: Date(timeIntervalSince1970: 1_700_000_000),
+            audioPath: audioURL.path,
+            targetAppName: nil,
+            targetBundleId: nil,
+            windowTitle: nil,
+            browserURL: nil
+        )
+        let saved = await store.saveActiveCapture(recovery)
+        XCTAssertTrue(saved)
+
+        let wrongID = await store.setAsideActiveCapture(id: UUID())
+        XCTAssertFalse(wrongID)
+        let stillLoaded = await store.loadActiveCaptureResult()
+        XCTAssertEqual(stillLoaded, .loaded(recovery))
+
+        let setAside = await store.setAsideActiveCapture(id: recovery.id)
+        XCTAssertTrue(setAside)
+        let afterwards = await store.loadActiveCaptureResult()
+        XCTAssertEqual(afterwards, .missing)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: audioURL.path))
+
+        let unrecovered = root.appendingPathComponent("recovery/unrecovered", isDirectory: true)
+        let kept = try FileManager.default.contentsOfDirectory(atPath: unrecovered.path).sorted()
+        XCTAssertEqual(kept, [
+            "\(recovery.id.uuidString)-capture.caf",
+            "\(recovery.id.uuidString).json"
+        ])
+        let keptAudio = try Data(contentsOf: unrecovered
+            .appendingPathComponent("\(recovery.id.uuidString)-capture.caf"))
+        XCTAssertEqual(keptAudio, Data([1, 2, 3]))
+    }
+
+    func testInterruptedCaptureRecoveryPolicy() {
+        // A sub-second capture with no saved text is given up on at once.
+        XCTAssertTrue(InterruptedCaptureRecoveryPolicy.shouldSetAside(
+            failedAttempts: 1, audioDuration: 0.75, hasPendingEntry: false))
+        // A real-length capture gets another launch to recover.
+        XCTAssertFalse(InterruptedCaptureRecoveryPolicy.shouldSetAside(
+            failedAttempts: 1, audioDuration: 12, hasPendingEntry: false))
+        XCTAssertFalse(InterruptedCaptureRecoveryPolicy.shouldSetAside(
+            failedAttempts: 1, audioDuration: nil, hasPendingEntry: false))
+        // Text had been produced: use the retry budget before giving up.
+        XCTAssertFalse(InterruptedCaptureRecoveryPolicy.shouldSetAside(
+            failedAttempts: 1, audioDuration: 0.5, hasPendingEntry: true))
+        // Nothing blocks dictation for more than two failed launches.
+        XCTAssertTrue(InterruptedCaptureRecoveryPolicy.shouldSetAside(
+            failedAttempts: 2, audioDuration: 12, hasPendingEntry: true))
+    }
 }

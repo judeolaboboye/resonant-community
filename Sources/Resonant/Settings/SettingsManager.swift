@@ -28,6 +28,10 @@ extension Defaults.Keys {
     static let hotkeyMode            = Key<String>("hotkeyMode",    default: HotkeyMode.hold.rawValue, suite: AppDefaults.suite)
     static let hotkeyHoldLockEnabled = Key<Bool>("hotkeyHoldLockEnabled", default: true, suite: AppDefaults.suite)
 
+    // Screen Awareness
+    static let screenAwarenessEnabled = Key<Bool>("screenAwarenessEnabled", default: true, suite: AppDefaults.suite)
+    static let screenAwarenessTalkbackEnabled = Key<Bool>("screenAwarenessTalkbackEnabled", default: false, suite: AppDefaults.suite)
+
     // Model
     static let selectedModelId       = Key<String>("selectedModelId", default: "parakeet-tdt-0.6b-v3", suite: AppDefaults.suite)
     static let transcriptionLanguage = Key<String>("transcriptionLanguage", default: "auto", suite: AppDefaults.suite)
@@ -241,6 +245,8 @@ final class SettingsManager {
         "hotkeyAlternateTriggers",
         "hotkeyMode",
         "hotkeyHoldLockEnabled",
+        "screenAwarenessEnabled",
+        "screenAwarenessTalkbackEnabled",
         "selectedModelId",
         "transcriptionLanguage",
         "removeFillersEnabled",
@@ -356,6 +362,10 @@ final class SettingsManager {
     }
     var hotkeyMode: HotkeyMode           { didSet { Defaults[.hotkeyMode]            = hotkeyMode.rawValue } }
     var hotkeyHoldLockEnabled: Bool      { didSet { Defaults[.hotkeyHoldLockEnabled] = hotkeyHoldLockEnabled } }
+
+    // Screen Awareness
+    var screenAwarenessEnabled: Bool     { didSet { Defaults[.screenAwarenessEnabled] = screenAwarenessEnabled } }
+    var screenAwarenessTalkbackEnabled: Bool { didSet { Defaults[.screenAwarenessTalkbackEnabled] = screenAwarenessTalkbackEnabled } }
 
     // Model
     var selectedModelId: String          { didSet { Defaults[.selectedModelId]       = selectedModelId } }
@@ -751,6 +761,8 @@ final class SettingsManager {
         }
         hotkeyMode               = (HotkeyMode(rawValue: Defaults[.hotkeyMode]) ?? .hold).normalized
         hotkeyHoldLockEnabled    = Defaults[.hotkeyHoldLockEnabled]
+        screenAwarenessEnabled   = Defaults[.screenAwarenessEnabled]
+        screenAwarenessTalkbackEnabled = Defaults[.screenAwarenessTalkbackEnabled]
         selectedModelId          = Defaults[.selectedModelId]
         transcriptionLanguage   = Defaults[.transcriptionLanguage]
         removeFillersEnabled     = Defaults[.removeFillersEnabled]
@@ -881,6 +893,8 @@ final class SettingsManager {
         Defaults[.hotkeyAlternateTriggers] = hotkeyAlternateTriggers.map(\.rawValue)
         Defaults[.hotkeyMode] = hotkeyMode.rawValue
         Defaults[.hotkeyHoldLockEnabled] = hotkeyHoldLockEnabled
+        Defaults[.screenAwarenessEnabled] = screenAwarenessEnabled
+        Defaults[.screenAwarenessTalkbackEnabled] = screenAwarenessTalkbackEnabled
         Defaults[.selectedModelId] = selectedModelId
         Defaults[.transcriptionLanguage] = transcriptionLanguage
         Defaults[.removeFillersEnabled] = removeFillersEnabled

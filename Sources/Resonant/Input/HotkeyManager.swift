@@ -371,10 +371,30 @@ final class HotkeyManager {
     var onCommandStart:   (() async -> Void)?
     var onCommandEnd:     (() async -> Void)?
 
+    /// Screen-awareness (left Option) trigger, wired independently of the
+    /// primary dictation trigger machinery above — see `handleFlagsChanged`.
+    var onScreenAwarenessStart: (() async -> Void)?
+    var onScreenAwarenessEnd:   (() async -> Void)?
+
     // MARK: - Config
 
     private var triggers: [HotkeyTrigger] = [.fn]
     private var mode: HotkeyMode = .hold
+
+    /// Whether the isolated left-Option branch in `handleFlagsChanged` is
+    /// armed. Set by `AppState` from `ScreenAwarenessManager.isHotkeyAvailable`,
+    /// which already accounts for the settings toggle and the collision case
+    /// where the user has separately bound left Option as a custom dictation
+    /// trigger.
+    private var screenAwarenessEnabled = false
+    private var screenAwarenessTriggerDown = false
+
+    func setScreenAwarenessEnabled(_ enabled: Bool) {
+        screenAwarenessEnabled = enabled
+        if !enabled {
+            screenAwarenessTriggerDown = false
+        }
+    }
     private var holdToTalkLockEnabled = true
     private var customKeyCodes: Set<UInt16> = []
     private let log = Logger.resonant("HotkeyManager")
@@ -1182,6 +1202,7 @@ final class HotkeyManager {
     }
 
     private func handleFlagsChanged(modifierFlags: NSEvent.ModifierFlags, keyCode: UInt16) {
+        handleScreenAwarenessTrigger(modifierFlags: modifierFlags, keyCode: keyCode)
         handleCommandChord(modifierFlags: modifierFlags)
 
         let modifierPressed = isCustomModifierPressed(
@@ -1206,6 +1227,26 @@ final class HotkeyManager {
         }
 
         refreshTriggerState(source: "flagsChanged")
+    }
+
+    /// Isolated, additive left-Option watcher for the screen-awareness
+    /// feature. Reads the same `modifierFlags`/`keyCode` the existing tap
+    /// already delivers — no second `CGEventTap`/`IOHIDManager`
+    /// registration, no new Input Monitoring prompt — and never touches any
+    /// of the primary-trigger state above (`flagsRightOptionDown`,
+    /// `refreshTriggerState`, chord suppression, mode arming). KeyCode 58 is
+    /// disjoint from the default primary trigger (61, right Option), and
+    /// `screenAwarenessEnabled` is kept false by `AppState` whenever the user
+    /// has separately bound left Option as a custom dictation trigger, so
+    /// this branch never fires concurrently with dictation's own handling of
+    /// that same keyCode.
+    private func handleScreenAwarenessTrigger(modifierFlags: NSEvent.ModifierFlags, keyCode: UInt16) {
+        guard screenAwarenessEnabled, keyCode == ScreenAwarenessTrigger.keyCode else { return }
+        let isDown = SideSpecificModifierKey.isPressed(keyCode: keyCode, modifierFlags: modifierFlags) ?? false
+        guard isDown != screenAwarenessTriggerDown else { return }
+        screenAwarenessTriggerDown = isDown
+        let callback = isDown ? onScreenAwarenessStart : onScreenAwarenessEnd
+        Task { @MainActor in await callback?() }
     }
 
     private func handleCommandChord(modifierFlags: NSEvent.ModifierFlags) {

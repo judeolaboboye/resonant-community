@@ -122,6 +122,7 @@ final class AppState {
 
     let postProcessor:    PostProcessor
     let dictationManager: DictationManager
+    let screenAwarenessManager: ScreenAwarenessManager
     let convexClient:     ConvexClient
     let hotMicManager:    HotMicManager
     let deliveryPersonalizationRouter: DeliveryPersonalizationRouter
@@ -376,6 +377,10 @@ final class AppState {
             postProcessor: postProcessor,
             contextExtractor: contextExtractor,
             personalizationLearningEngine: personalizationMemoryStore
+        )
+        screenAwarenessManager = ScreenAwarenessManager(
+            dictationManager: dictationManager,
+            settingsManager: settingsManager
         )
         convexClient     = ConvexClient(authManager: authManager)
         hotMicManager    = HotMicManager(postProcessor: postProcessor)
@@ -1135,6 +1140,8 @@ final class AppState {
                         ),
                         timeout: .seconds(6)
                     )
+                } else if await setAsideInterruptedCaptureIfUnrecoverable(recovery) {
+                    // Notice already shown; new captures are unblocked.
                 } else {
                     notchCoordinator.showNotice(
                         NotchOverlayState.Notice(
@@ -1305,7 +1312,12 @@ final class AppState {
             ])
             // Transcriber/model failures can be transient. Preserve the sole
             // source audio and marker rather than turning one bad launch into
-            // permanent data loss.
+            // permanent data loss — unless the capture has proven
+            // unrecoverable, in which case it is set aside (not deleted) so it
+            // stops blocking every new dictation.
+            if await setAsideInterruptedCaptureIfUnrecoverable(recovery) {
+                return true
+            }
             notchCoordinator.showNotice(
                 NotchOverlayState.Notice(
                     title: "Could not recover interrupted \(label)",
@@ -2907,6 +2919,7 @@ final class AppState {
         localAPIServer.stop()
         clamshellMicrophoneSwitcher.stop()
         notchWindowManager?.teardown()
+        screenAwarenessManager.teardown()
         notificationObservers.removeAll()
     }
 
@@ -2944,6 +2957,22 @@ final class AppState {
             mode: settingsManager.hotkeyMode,
             holdToTalkLockEnabled: settingsManager.hotkeyHoldLockEnabled
         )
+
+        screenAwarenessManager.isDictationBusyProvider = { [weak self] in
+            guard let self else { return true }
+            return self.isRecording || self.isStartingRecording || self.isFinishingCapture
+        }
+        hotkeyManager.onScreenAwarenessStart = { [weak self] in await self?.screenAwarenessManager.handleTriggerDown() }
+        hotkeyManager.onScreenAwarenessEnd   = { [weak self] in await self?.screenAwarenessManager.handleTriggerUp() }
+        refreshScreenAwarenessHotkeyAvailability()
+    }
+
+    /// Re-evaluates whether the left-Option hotkey should be armed for
+    /// screen-awareness. Call whenever `settingsManager.hotkeyTriggers` or
+    /// `settingsManager.screenAwarenessEnabled` changes, alongside the
+    /// existing dictation-hotkey `reconfigure` call.
+    func refreshScreenAwarenessHotkeyAvailability() {
+        hotkeyManager.setScreenAwarenessEnabled(screenAwarenessManager.isHotkeyAvailable)
     }
 
     func refreshRuntimePermissions() {
@@ -7843,6 +7872,53 @@ final class AppState {
             activeCaptureRecoveryID = nil
             activeCaptureShouldPersistAudio = nil
         }
+    }
+
+    private static let interruptedRecoveryAttemptIDKey = "interruptedCaptureRecoveryAttemptID"
+    private static let interruptedRecoveryAttemptCountKey = "interruptedCaptureRecoveryAttemptCount"
+
+    /// Counts a failed recovery attempt and, once the capture is clearly
+    /// unrecoverable, moves it to `recovery/unrecovered/` and releases the
+    /// marker. Returns true when the capture was set aside.
+    private func setAsideInterruptedCaptureIfUnrecoverable(
+        _ recovery: ActiveCaptureRecovery
+    ) async -> Bool {
+        let defaults = UserDefaults.standard
+        let idString = recovery.id.uuidString
+        let previousAttempts = defaults.string(forKey: Self.interruptedRecoveryAttemptIDKey) == idString
+            ? defaults.integer(forKey: Self.interruptedRecoveryAttemptCountKey)
+            : 0
+        let failedAttempts = previousAttempts + 1
+        defaults.set(idString, forKey: Self.interruptedRecoveryAttemptIDKey)
+        defaults.set(failedAttempts, forKey: Self.interruptedRecoveryAttemptCountKey)
+
+        let audioDuration = (try? TranscriberAudioSupport.captureDiagnostics(from: recovery.audioURL))?.duration
+        guard InterruptedCaptureRecoveryPolicy.shouldSetAside(
+            failedAttempts: failedAttempts,
+            audioDuration: audioDuration,
+            hasPendingEntry: recovery.pendingEntryID != nil
+        ) else { return false }
+        guard await recoveryStore.setAsideActiveCapture(id: recovery.id) else {
+            Self.log.error("Could not set aside unrecoverable interrupted capture")
+            return false
+        }
+
+        defaults.removeObject(forKey: Self.interruptedRecoveryAttemptIDKey)
+        defaults.removeObject(forKey: Self.interruptedRecoveryAttemptCountKey)
+        if activeCaptureRecoveryID == recovery.id {
+            activeCaptureRecoveryID = nil
+            activeCaptureShouldPersistAudio = nil
+        }
+        Self.log.info("Interrupted capture set aside after \(failedAttempts, privacy: .public) failed recovery attempt(s)")
+        notchCoordinator.showNotice(
+            NotchOverlayState.Notice(
+                title: "Interrupted recording set aside",
+                detail: "It could not be recovered, so it was kept in the recovery folder. You can dictate again.",
+                icon: "waveform"
+            ),
+            timeout: .seconds(6)
+        )
+        return true
     }
 
     private func rejectNewCaptureForPendingRecovery() -> Bool {
