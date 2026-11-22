@@ -360,12 +360,32 @@ enum CollapsedRunRepair {
         return score
     }
 
+    /// English variants checked in addition to the system spelling language.
+    /// On a Mac set to British English the default checker rejects American
+    /// spellings ("organizational", "visualization"), and the transcription
+    /// model writes either variant. Without this, a valid whole word was
+    /// treated as a collapsed run and split ("org a niz at ional").
+    private static let englishSpellingVariants = ["en_US", "en_GB"]
+
     private static func isAcceptedSystemWord(_ word: String) -> Bool {
         SpellCheckSerialization.lock.withLock {
-            NSSpellChecker.shared.checkSpelling(
-                of: word,
-                startingAt: 0
-            ).location == NSNotFound
+            let checker = NSSpellChecker.shared
+            if checker.checkSpelling(of: word, startingAt: 0).location == NSNotFound {
+                return true
+            }
+            // No `availableLanguages` guard: macOS lists American English as
+            // "en", yet accepts "en_US" here. An unknown code just falls back
+            // to the default language, which already said no above.
+            return englishSpellingVariants.contains { language in
+                checker.checkSpelling(
+                        of: word,
+                        startingAt: 0,
+                        language: language,
+                        wrap: false,
+                        inSpellDocumentWithTag: 0,
+                        wordCount: nil
+                    ).location == NSNotFound
+            }
         }
     }
 

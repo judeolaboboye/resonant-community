@@ -37,7 +37,7 @@ final class SettingsTabVisibilityTests: XCTestCase {
         XCTAssertEqual(sections["General"], ["General", "Appearance"])
         XCTAssertEqual(
             sections["Use"],
-            ["Dictation", "Dictionary", "Meetings", "Personalization", "Smart Links", "Writing"]
+            ["Dictation", "Dictionary", "Meetings", "Personalization", "Screen Awareness", "Smart Links", "Writing"]
         )
     }
 

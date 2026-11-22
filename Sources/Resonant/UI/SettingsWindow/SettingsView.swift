@@ -142,6 +142,7 @@ struct SettingsView: View {
         case .smartLinks:      SmartLinksTabView()
         case .meetingSettings: MeetingSettingsView()
         case .meetingAdvanced: MeetingAdvancedSettingsView()
+        case .screenAwareness: ScreenAwarenessSettingsView()
         case .models:          ModelsLanguageTabView()
         case .workspace:       WorkspaceTabView()
         case .workspaceCloud:  WorkspaceCloudSettingsView()
@@ -184,6 +185,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     // Settings — Meetings
     case meetingSettings      = "MeetingSettings"
     case meetingAdvanced      = "MeetingAdvanced"
+    case screenAwareness      = "ScreenAwareness"
     case models           = "Models"
     // Settings — Workspace
     case workspace        = "Workspace"
@@ -217,7 +219,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     static var settingsSections: [(label: String?, tabs: [SettingsTab])] {
         var sections: [(label: String?, tabs: [SettingsTab])] = [
             ("General",   [.account, .appearance]),
-            ("Use",       [.dictation, .dictionary, .meetingSettings, .personalization, .smartLinks, .writing]),
+            ("Use",       [.dictation, .dictionary, .meetingSettings, .personalization, .screenAwareness, .smartLinks, .writing]),
             ("Privacy",   [.workspace]),
             ("Advanced",  [.advanced]),
         ]
@@ -280,6 +282,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .smartLinks:      "link"
         case .meetingSettings: "video.badge.ellipsis"
         case .meetingAdvanced: "slider.horizontal.3"
+        case .screenAwareness: "eye.fill"
         case .models:          "cpu"
         case .workspace:       "externaldrive.fill"
         case .workspaceCloud:  "icloud.fill"
@@ -297,6 +300,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         switch self {
         case .meetingSettings: "Meetings"
         case .meetingAdvanced: "Meeting advanced"
+        case .screenAwareness: "Screen Awareness"
         case .models:          "Models & Language"
         case .workspace:       "Privacy"
         case .workspaceCloud:  "Cloud Sync"
@@ -1156,6 +1160,9 @@ struct DictationTabView: View {
                 mode: settings.hotkeyMode,
                 holdToTalkLockEnabled: settings.hotkeyHoldLockEnabled
             )
+            // Left Option may have just been bound/unbound as a dictation
+            // alternate — re-check the screen-awareness hotkey collision.
+            appState.refreshScreenAwarenessHotkeyAvailability()
         }
 
         let hotkeyWarnings: [HotkeyTrigger: String] = {
